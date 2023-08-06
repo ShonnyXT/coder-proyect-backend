@@ -1,56 +1,80 @@
-class ProductManager{
-    constructor() {
-        this.products = []
-    }
+import {promises as fs} from 'fs'
 
-    addProduct(product) {
+class ProductManager{
+
+    constructor() {
+        this.path = './productos.json'
+    }
+    
+    async addProduct(product) {
         // Comprobacion de adicion al carro
-        const prod = this.products.find(prod => prod.code === product.code)
-        if (!product.id || prod) {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        const code = prods.find(prod => prod.code === product.code)
+
+        if (!product.id || code) {
             console.log("")
-            console.log("> Campo requerido o Code Repetido<")
+            console.log("> Campo requerido o Code Repetido <")
         } else {
-            this.products.push(product)
+            prods.push(product)
+            await fs.writeFile(this.path, JSON.stringify(prods))
+            console.log("")
+            console.log("> Producto añadido con Éxito <")
         }
     }
-
-    getProducts() {
-        console.log(this.products)
+    
+    async getProducts() {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        
+        console.log("")
+        console.log(">> Listado de Productos <<")
+        console.log(prods)
     }
+    
+    async getProductById(id) {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        const prod = prods.find(prod => prod.id === id)
 
-    getProductById(id) {
-        const prod = this.products.find(prod => prod.id === id)
         if(prod) {
+            console.log("")
+            console.log(">> Productos con ID encontrado: <<")
             console.log(prod)
         } else {
+            console.log("")
             console.log("> Not found <")
         }
     }
-
-    updateProduct(id, title, description, price, thumbnail, code, stock) {
-        const prod = this.products.find(prod => prod.id === id)
-        const index = this.products.findIndex(prod => prod.id === id)
-
-        if (prod) {
-            this.products[index].title = title
-            this.products[index].description = description
-            this.products[index].price = price
-            this.products[index].thumbnail = thumbnail
-            this.products[index].code = code
-            this.products[index].stock = stock
-            console.log("Se cambio el Producto con id: " + id)
+    
+    async updateProduct(id, product) {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        const index = prods.findIndex(prod => prod.id === id)
+        
+        if (index != -1) {
+            prods[index].title = product.title
+            prods[index].description = product.description
+            prods[index].price = product.price
+            prods[index].thumbnail = product.thumbnail
+            prods[index].code = product.code
+            prods[index].stock = product.stock
+            await fs.writeFile(this.path, JSON.stringify(prods))
+            
+            console.log("")
+            console.log(">> Se cambio el Producto con id: " + id + " <<")
         }  else {
+            console.log("")
             console.log("> Producto no encontrado <")
         }
-    } 
-
-    deleteProduct(id) {
-        const prod = this.products.find(prod => prod.id === id)
-        const index = this.products.findIndex(prod => prod.id === id)
+    }
+    
+    async deleteProduct(id) {
+        const prods = JSON.parse(await fs.readFile(this.path, 'utf-8'))
+        const prod = prods.find(prod => prod.id === id)
+        
         if (prod) {
-            this.products.splice(index,1)
-            console.log("Se elimino el Producto con id: " + id)
+            await fs.writeFile(this.path, JSON.stringify(prods.filter(prod => prod.id != id)))
+            console.log("")
+            console.log(">> Se elimino el Producto con id: " + id + " <<")
         } else {
+            console.log("")
             console.log("> Producto no encontrado <")
         }
     }
@@ -62,7 +86,7 @@ class Product {
         if (!title || !description || !price || !thumbnail || !code || !stock) {
             return
         }
-
+        
         this.title = title
         this.description = description
         this.price = price
@@ -71,7 +95,7 @@ class Product {
         this.stock = stock
         this.id = Product.incrementarId()
     }
-
+    
     // Incrementador para el ID
     static incrementarId() {
         if(this.idIncrementador) {
@@ -92,34 +116,18 @@ const producto5 = new Product("Prueba", "Prueba", 999, [], "DD123", 20) // test 
 
 // Agregando Productos al carrito
 const productManager = new ProductManager()
-productManager.addProduct(producto1)
-productManager.addProduct(producto2)
-productManager.addProduct(producto3)
-productManager.addProduct(producto4)
-productManager.addProduct(producto5)
+/* productManager.addProduct(producto5) */  // peligro de romper
 
 // Todos los Productos
-console.log("")
-console.log(">> Listado de Productos <<")
 productManager.getProducts()
 
 // Buscar Producto por ID
-console.log("")
-console.log(">> Productos con ID <<")
 productManager.getProductById(2)
 productManager.getProductById(4) // test buscardor
 
-// Cambiando Producto       (id, title, description, price, thumbnail, code, stock)
-console.log("")
-console.log(">> Productos Cambiados <<")
-productManager.updateProduct(1, "Producto", "Cambiado", 99, [], "ZZ99", 99)
+// Cambiando Producto       (id, cuerpo)
+productManager.updateProduct(1, {title: "prueba", description: "comprobada", price: 99, thumbnail: [], code: "ZZ999", stock: 99})
 
 // Borrar un Producto
-console.log("")
-console.log(">> Productos Eliminados <<")
-productManager.deleteProduct(3)
+/* productManager.deleteProduct(3) */ // peligro de romper
 
-console.log("")
-console.log("")
-console.log(">>> Resultado Final <<<")
-productManager.getProducts()
